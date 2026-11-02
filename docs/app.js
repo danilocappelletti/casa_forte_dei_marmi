@@ -10,7 +10,11 @@ const view = { x: initial[0], y: initial[1], w: initial[2], h: initial[3] };
 applyView();
 
 function applyView() {
-  svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+  if (applyView.frame) return;
+  applyView.frame = requestAnimationFrame(() => {
+    applyView.frame = 0;
+    svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
+  });
 }
 
 function toSvgPoint(clientX, clientY) {

@@ -1,6 +1,9 @@
 body {
   margin: 0;
   height: 100vh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 #stage {

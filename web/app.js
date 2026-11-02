@@ -12,24 +12,46 @@ function toSvgPoint(clientX, clientY) {
   return { x: view.x + ((clientX - r.left) / r.width) * view.w, y: view.y + ((clientY - r.top) / r.height) * view.h };
 }
 
+const MIN_W = initial[2] / 40, MAX_W = initial[2] * 1.5;
+
+function zoomAt(p, k) {
+  const w = Math.min(MAX_W, Math.max(MIN_W, view.w * k));
+  const f = w / view.w;
+  view.x = p.x - (p.x - view.x) * f;
+  view.y = p.y - (p.y - view.y) * f;
+  view.w = w;
+  view.h *= f;
+  applyView();
+}
+
 svg.addEventListener("wheel", (e) => {
   e.preventDefault();
-  const k = e.deltaY > 0 ? 1.15 : 1 / 1.15;
-  const p = toSvgPoint(e.clientX, e.clientY);
-  view.x = p.x - (p.x - view.x) * k;
-  view.y = p.y - (p.y - view.y) * k;
-  view.w *= k;
-  view.h *= k;
-  applyView();
+  zoomAt(toSvgPoint(e.clientX, e.clientY), e.deltaY > 0 ? 1.15 : 1 / 1.15);
 }, { passive: false });
 
+// Mouse e touch: un dito trascina, due dita fanno zoom attorno al punto medio
+const pts = new Map();
 let drag = null;
+let pinchD = 0;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const startDrag = (p) => { drag = { x: p.x, y: p.y, vx: view.x, vy: view.y }; };
 
 stage.addEventListener("pointerdown", (e) => {
-  drag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pts.size === 1) startDrag(pts.get(e.pointerId));
+  if (pts.size === 2) { const [a, b] = [...pts.values()]; pinchD = dist(a, b); }
 });
 
 window.addEventListener("pointermove", (e) => {
+  if (!pts.has(e.pointerId)) return;
+  pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pts.size === 2) {
+    const [a, b] = [...pts.values()];
+    const d = dist(a, b);
+    if (pinchD > 0 && d > 0) zoomAt(toSvgPoint((a.x + b.x) / 2, (a.y + b.y) / 2), pinchD / d);
+    pinchD = d;
+    return;
+  }
   if (!drag) return;
   const r = svg.getBoundingClientRect();
   const dx = e.clientX - drag.x;
@@ -40,9 +62,20 @@ window.addEventListener("pointermove", (e) => {
   applyView();
 });
 
-window.addEventListener("pointerup", () => {
-  drag = null;
-  stage.classList.remove("dragging");
+const endPointer = (e) => {
+  if (!pts.delete(e.pointerId)) return;
+  if (pts.size === 1) startDrag([...pts.values()][0]);
+  if (pts.size === 0) {
+    drag = null;
+    stage.classList.remove("dragging");
+  }
+};
+window.addEventListener("pointerup", endPointer);
+window.addEventListener("pointercancel", endPointer);
+
+document.getElementById("reset2d").addEventListener("click", () => {
+  [view.x, view.y, view.w, view.h] = initial;
+  applyView();
 });
 
 // Colorazione dei tre prospetti, disegnata sotto le linee del CAD.
@@ -180,6 +213,7 @@ btn3d.addEventListener("click", () => {
   }
   view3d.hidden = !on;
   stage.hidden = on;
+  document.getElementById("reset2d").hidden = on;
   btn3d.textContent = on ? "Vista 2D" : "Vista 3D";
   window.dispatchEvent(new Event("resize"));
 });

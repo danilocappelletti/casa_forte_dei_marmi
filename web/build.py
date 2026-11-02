@@ -101,12 +101,14 @@ page = f"""<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>x arredatrici</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <button id="toggle3d">Vista 3D</button>
 <div id="view3d" hidden></div>
+<button id="reset2d">Vista iniziale</button>
 <main id="stage">
 <svg id="drawing" xmlns="http://www.w3.org/2000/svg" viewBox="{view}">
 {chr(10).join(groups)}

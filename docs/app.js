@@ -1,7 +1,13 @@
 ﻿const svg = document.getElementById("drawing");
 const stage = document.getElementById("stage");
-const initial = svg.getAttribute("viewBox").split(" ").map(Number);
+const full = svg.getAttribute("viewBox").split(" ").map(Number);
+// In verticale (telefono) il foglio è troppo largo: la vista iniziale riempie l'altezza e si centra sulla casa
+const stageRatio = stage.clientWidth / stage.clientHeight;
+const initial = stageRatio < 1
+  ? [2017.5 - (full[3] * stageRatio) / 2, full[1], full[3] * stageRatio, full[3]]
+  : full;
 const view = { x: initial[0], y: initial[1], w: initial[2], h: initial[3] };
+applyView();
 
 function applyView() {
   svg.setAttribute("viewBox", `${view.x} ${view.y} ${view.w} ${view.h}`);
